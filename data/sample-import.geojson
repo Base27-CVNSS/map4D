@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Điểm quan trắc minh họa A",
+        "district": "Bình Đại",
+        "sample": true,
+        "provenance": "SYNTHETIC_TEST_DATA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.635,
+          10.185
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Điểm quan trắc minh họa B",
+        "district": "Ba Tri",
+        "sample": true,
+        "provenance": "SYNTHETIC_TEST_DATA"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          106.601,
+          10.059
+        ]
+      }
+    }
+  ]
+}
