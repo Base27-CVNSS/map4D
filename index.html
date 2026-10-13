@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#081a2a">
+  <meta name="description" content="Map4D Research Reproduction — WebGIS nuôi tôm công nghệ cao Bến Tre, dựa trên báo cáo khoa học năm 2024.">
+  <title>Map4D Research Lab | WebGIS Nuôi tôm Bến Tre</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand"><div class="brandmark">4D<span>+</span></div><div class="brandtitle"><strong>MAP4D <em>RESEARCH LAB</em></strong><small>Spatial aquaculture intelligence · Bến Tre</small></div></div>
+      <div class="header-center"><span class="signal"></span> TÁI LẬP NGHIÊN CỨU KHOA HỌC <span class="divider-dot">/</span> BÁO CÁO 2024</div>
+      <div class="header-actions"><span class="chip">WGS84 · EPSG:4326</span><button id="openGuide" class="ghost icon-btn" title="Giới thiệu và phạm vi"><span>ⓘ</span> <span class="desktop">Hướng dẫn</span></button><a class="github-btn" href="https://github.com/Base27-CVNSS/map4D" target="_blank" rel="noopener noreferrer">↗ GitHub</a></div>
+    </header>
+    <div class="workspace">
+      <aside class="sidebar" aria-label="Điều khiển lớp dữ liệu">
+        <div class="side-scroll">
+          <div class="section-head"><span class="eyebrow">RESEARCH REPRODUCTION · 01</span><h1>Bản đồ vùng nuôi<br><span>tôm công nghệ cao</span></h1><p>Tham chiếu báo cáo khoa học Map4D GIS Platform tại Bến Tre, tháng 7/2024.</p></div>
+          <div class="small-divider"></div>
+          <div class="section-top"><h2>LỚP DỮ LIỆU GIS</h2><span id="layerCount" class="count-pill">10 lớp</span></div>
+          <div class="layer-group"><div class="group-label">VÙNG NUÔI & QUY HOẠCH</div>
+            <label class="layer-item"><input type="checkbox" data-layer="farms" checked><span class="swatch" style="--swatch:#12c5a1"></span><span>Ao/hộ nuôi CNC</span><small id="farmCount">0</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="plans" checked><span class="swatch" style="--swatch:#f1a94e"></span><span>Quy hoạch tôm CNC 4D</span><small id="planCount">0</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="aquaculture"><span class="swatch" style="--swatch:#9b82ec"></span><span>Hiện trạng NTTS</span><small>◇</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="aquaPlan"><span class="swatch" style="--swatch:#f971a1"></span><span>Quy hoạch NTTS</span><small>◇</small></label>
+          </div>
+          <div class="layer-group"><div class="group-label">NỀN ĐỊA LÝ & ĐỊA CHÍNH</div>
+            <label class="layer-item"><input type="checkbox" data-layer="parcels"><span class="swatch" style="--swatch:#c5b3f5"></span><span>Thửa đất</span><small>◇</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="province"><span class="swatch" style="--swatch:#a2c1ce"></span><span>Hành chính tỉnh</span><small>◇</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="district" checked><span class="swatch" style="--swatch:#6aa6ff"></span><span>Hành chính huyện*</span><small>3</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="commune"><span class="swatch" style="--swatch:#a3b1b6"></span><span>Hành chính xã</span><small>◇</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="roads"><span class="swatch" style="--swatch:#ebd18a"></span><span>Giao thông</span><small>◇</small></label>
+            <label class="layer-item"><input type="checkbox" data-layer="waters"><span class="swatch" style="--swatch:#48a8e8"></span><span>Sông hồ</span><small>◇</small></label>
+          </div>
+          <p class="layer-note">◇ Chờ nhập GeoJSON thực địa. *Địa danh huyện theo thời điểm báo cáo 2024; các chấm mốc là điểm tham chiếu, không phải ranh giới hành chính.</p>
+          <div class="small-divider"></div>
+          <div class="section-top"><h2>BỘ LỌC KHU VỰC</h2><button id="resetFilters" class="text-action">Đặt lại</button></div>
+          <label class="control-label" for="districtFilter">Địa bàn trong báo cáo</label>
+          <select id="districtFilter" class="select"><option value="all">Tất cả · 3 huyện lịch sử</option><option value="Bình Đại">Bình Đại</option><option value="Ba Tri">Ba Tri</option><option value="Thạnh Phú">Thạnh Phú</option></select>
+          <label class="control-label" for="statusFilter">Tình trạng hồ sơ (dữ liệu demo)</label>
+          <select id="statusFilter" class="select"><option value="all">Tất cả trạng thái</option><option value="Đang hoạt động">Đang hoạt động</option><option value="Cần rà soát">Cần rà soát</option><option value="Chờ duyệt">Chờ duyệt</option></select>
+          <div class="small-divider"></div>
+          <div class="section-top"><h2>CÔNG CỤ GIS</h2><span class="mini-tag">LOCAL MODE</span></div>
+          <div class="tools-grid">
+            <button data-draw="Point" class="tool-btn"><span>◎</span> Thêm điểm</button>
+            <button data-draw="LineString" class="tool-btn"><span>╱</span> Vẽ tuyến / đo dài</button>
+            <button data-draw="Polygon" class="tool-btn"><span>⬡</span> Vẽ vùng / đo diện tích</button>
+            <button id="clearDraw" class="tool-btn"><span>✕</span> Hủy thao tác</button>
+          </div>
+          <div class="import-box"><span class="group-label">NHẬP / XUẤT</span><div class="import-buttons"><label for="fileImport" class="outline-btn">↑ Nhập GeoJSON / CSV</label><input id="fileImport" type="file" accept=".json,.geojson,.csv,application/json,text/csv" hidden><button id="pasteWkt" class="outline-btn">WKT</button></div><div class="import-buttons"><button id="exportGeojson" class="outline-btn">↓ GeoJSON</button><button id="exportCsv" class="outline-btn">↓ CSV</button></div></div>
+          <div class="reference-box"><span class="source-mark">◆</span><div><strong>NGUỒN NGHIÊN CỨU</strong><p>Ứng dụng Map4D GIS Platform cho việc số hóa, quản lý nuôi tôm CNC (4.000 ha) tại tỉnh Bến Tre · 2024.</p><button id="sourceInfo" class="text-action">Xem phạm vi tái lập ↗</button></div></div>
+        </div>
+        <div class="side-footer">LONG NGO · 2026 <span>REPRODUCIBLE WEBGIS / V0.1</span></div>
+      </aside>
+      <main class="main-area">
+        <div class="stats-strip" aria-label="Chỉ số nghiên cứu">
+          <div class="stat"><span class="stat-label">DIỆN TÍCH 2021 <sup>①</sup></span><div class="stat-value">2.000 <small>ha</small></div><div class="stat-sub">Kết quả thống kê trong báo cáo</div></div>
+          <div class="stat"><span class="stat-label">SẢN LƯỢNG 2021 <sup>①</sup></span><div class="stat-value">40.000 <small>tấn</small></div><div class="stat-sub">Bảng 3, tr. 67</div></div>
+          <div class="stat"><span class="stat-label">QUY MÔ SỐ HÓA <sup>②</sup></span><div class="stat-value">1.900 <small>ha</small></div><div class="stat-sub">Phạm vi triển khai đề tài</div></div>
+          <div class="stat"><span class="stat-label">MỤC TIÊU 2025 <sup>③</sup></span><div class="stat-value accent">4.000 <small>ha</small></div><div class="stat-sub">Mốc kế hoạch, không phải thực đo</div></div>
+        </div>
+        <div class="map-container">
+          <div id="map" aria-label="Bản đồ tương tác khu vực Bến Tre"></div>
+          <div class="map-toolbar">
+            <span class="map-mode-label">MAP ENGINE <b>MapLibre GL JS</b></span>
+            <div class="segmented"><button class="active" id="mode2d">2D MAP</button><button id="mode3d">3D VIEW</button></div>
+            <button id="resetView" class="icon-tool" title="Về khu vực nghiên cứu">⌖</button>
+          </div>
+          <div class="map-search"><span>⌕</span><input id="searchInput" type="search" placeholder="Tìm mã ao, địa bàn, tên đối tượng demo..." aria-label="Tìm đối tượng"><kbd>↵</kbd></div>
+          <div id="drawHint" class="draw-hint hidden" role="status"></div>
+          <div class="compass-widget">N <span>↑</span></div>
+          <div class="map-legend"><div class="legend-title">CHÚ GIẢI MÔ PHỎNG</div><div><i style="background:#12c5a1"></i> Ao nuôi (hình học giả lập)</div><div><i style="background:#efae56"></i> Vùng quy hoạch (giả lập)</div><div><i style="background:#528eff"></i> Điểm tham chiếu huyện</div></div>
+          <div class="map-disclaimer"><span>DEMO GEOMETRY</span> Tọa độ vùng nuôi chỉ để minh họa, không phải dữ liệu thửa đất/ranh giới được nghiệm thu.</div>
+          <div id="mapStatus" class="map-status">Đang kết nối thư viện bản đồ…</div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-heading"><div><span class="eyebrow">TEMPORAL GIS · 4D</span><strong>Diễn tiến lớp quy hoạch (mô phỏng)</strong></div><div class="timeline-actions"><span class="time-label">NĂM <b id="yearLabel">2021</b></span><button id="playTime" class="play-btn">▶ Phát</button></div></div>
+          <div class="range-wrap"><input type="range" id="yearRange" min="2021" max="2025" value="2021" step="1"><div class="ticks"><span>2021</span><span>2022</span><span>2023</span><span>2024</span><span>2025</span></div></div>
+          <div class="timeline-note"><span class="pulse-dot"></span><span id="timelineText">Lớp demo năm 2021. Không suy diễn diện tích hoặc sản lượng thực tế theo năm từ mô phỏng.</span></div>
+        </div>
+      </main>
+      <aside class="inspector" aria-label="Phân tích và hồ sơ">
+        <div class="inspector-head"><div class="eyebrow">INTELLIGENCE PANEL</div><h2>Điều hành & phân tích</h2><div class="tab-row"><button data-tab="analytics" class="tab active">Thống kê</button><button data-tab="records" class="tab">Hồ sơ</button><button data-tab="detail" class="tab">Đối tượng</button></div></div>
+        <div id="paneAnalytics" class="inspector-body pane">
+          <div class="panel-title"><h3>Biến động 2017–2021</h3><small>① DỮ LIỆU BÁO CÁO</small></div>
+          <div class="chart-tabs"><button data-chart="area" class="active">Diện tích (ha)</button><button data-chart="production">Sản lượng (tấn)</button></div>
+          <div id="historyChart" class="chart-space" role="img" aria-label="Biểu đồ số liệu trong Bảng 3"></div>
+          <div class="chart-source">Bảng 3, trang 67 · Sở NN&PTNT Bến Tre (2022), dẫn theo báo cáo 2024.</div>
+          <div class="panel-separator"></div>
+          <div class="panel-title"><h3>Phạm vi nghiên cứu</h3><small>3 HUYỆN</small></div>
+          <div class="district-cards"><button data-go="Bình Đại"><span class="district-icon">01</span><span><strong>Bình Đại</strong><small>Khu vực ven biển</small></span><span>↗</span></button><button data-go="Ba Tri"><span class="district-icon">02</span><span><strong>Ba Tri</strong><small>Khu vực ven biển</small></span><span>↗</span></button><button data-go="Thạnh Phú"><span class="district-icon">03</span><span><strong>Thạnh Phú</strong><small>Khu vực ven biển</small></span><span>↗</span></button></div>
+          <div class="panel-separator"></div>
+          <div class="panel-title"><h3>Chỉ số triển khai</h3><small>② & ③</small></div>
+          <div class="progress-heading"><span>Số hóa 1.900 ha / mục tiêu 4.000 ha</span><b>47,5%</b></div><div class="progress-track"><div style="width:47.5%"></div></div><p class="muted">Tỷ số giữa phạm vi số hóa của đề tài và mục tiêu quy hoạch; không diễn giải là tỷ lệ hoàn thành thực tế năm 2025.</p>
+          <button id="downloadResearchCsv" class="full-btn">↓ Xuất bảng số liệu nghiên cứu</button>
+        </div>
+        <div id="paneRecords" class="inspector-body pane hidden">
+          <div class="panel-title"><h3>Danh mục ao/hộ nuôi</h3><small>DEMO</small></div>
+          <p class="muted">Bản ghi giả lập, được lưu trong trình duyệt của bạn. Không chứa hồ sơ người dân từ nghiên cứu.</p>
+          <div id="recordList" class="record-list"></div>
+          <div class="panel-separator"></div>
+          <h3 class="form-title">Tạo hồ sơ minh họa</h3>
+          <label class="control-label">Tên/mã khu nuôi</label><input class="field" id="newName" placeholder="Ví dụ: AO-DEMO-010" maxlength="100">
+          <label class="control-label">Địa bàn (theo báo cáo 2024)</label><select class="select" id="newDistrict"><option>Bình Đại</option><option>Ba Tri</option><option>Thạnh Phú</option></select>
+          <label class="control-label">Diện tích hồ sơ (ha, do người dùng nhập)</label><input class="field" id="newArea" type="number" min="0.01" max="10000" step=".01" placeholder="1.5">
+          <button class="full-btn" id="createRecord">+ Tạo hồ sơ demo tại điểm tham chiếu</button>
+          <p class="muted">Để lập vùng chính xác, hãy nhập GeoJSON WGS84 hoặc dùng công cụ vẽ vùng trên bản đồ.</p>
+        </div>
+        <div id="paneDetail" class="inspector-body pane hidden"><div id="featureDetails"><div class="empty-state"><div>⌖</div><strong>Chưa chọn đối tượng</strong><p>Nhấp vào ao nuôi hoặc vùng quy hoạch để xem thuộc tính GIS, mã đối tượng và trạng thái.</p></div></div></div>
+        <div class="inspector-footer"><span class="alive-indicator"></span> Phiên làm việc độc lập · <span id="dataCounter">0 đối tượng demo</span></div>
+      </aside>
+    </div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <dialog id="infoDialog"><div class="dialog-title"><h2>Map4D Research Reproduction</h2><button id="closeDialog" aria-label="Đóng">✕</button></div><div class="dialog-content"><p><b>Nguồn:</b> Báo cáo tổng kết đề tài “Ứng dụng Map4D GIS Platform cho việc số hóa, quản lý nuôi tôm công nghệ cao (4000 hecta) tại tỉnh Bến Tre”, chủ nhiệm TS. Trịnh Công Duy, Sở Khoa học và Công nghệ tỉnh Bến Tre, tháng 7/2024.</p><p><b>Tái lập độc lập:</b> Long Ngo · 2026. Không phải mã nguồn chính thức của IOTLink/Map4D, không sao chép dữ liệu nhạy cảm hoặc quyền sử dụng nhãn hiệu. Demo sử dụng MapLibre GL JS + GeoJSON.</p><p><b>Số liệu gốc:</b> Bảng 3 (tr.67), Bảng 4 (tr.78–87), Bảng 5 (tr.104–106), Bảng 6 (tr.120–121), phụ lục thiết kế (tr.203–243). Lưu ý báo cáo có số liệu năm 2020 không nhất quán giữa phần mở đầu (1.680 ha) và Bảng 3 (1.640 ha); dashboard ưu tiên Bảng 3.</p><p><b>Không phải dữ liệu gốc:</b> tọa độ ao mẫu, vùng quy hoạch mẫu, hiện trạng hồ sơ, trạng thái và diễn tiến thời gian của các đa giác. Những dữ liệu này chỉ minh họa cách vận hành GIS; không dùng để ra quyết định đất đai hoặc quản lý nhà nước.</p><p><b>Giới hạn:</b> GitHub Pages là frontend tĩnh, không có xác thực, hệ thống duyệt hồ sơ đa người dùng, kho PostGIS hoặc máy chủ bảo mật; dữ liệu phát sinh chỉ được lưu cục bộ trên trình duyệt.</p><p><b>Tọa độ:</b> dữ liệu nhập vào phải là GeoJSON WGS84 EPSG:4326 (kinh độ, vĩ độ). CSDL nghiên cứu sử dụng VN-2000 tại Bến Tre; cần chuyển CRS bằng công cụ GIS trước khi nhập.</p></div><button id="dialogOk" class="full-btn">Đã hiểu</button></dialog>
+  </div>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
