@@ -105,6 +105,8 @@ function initMap(){
    map.addLayer({id:"plans-border",type:"line",source:"plans",paint:{"line-color":"#b66f19","line-width":2,"line-dasharray":[3,2]}});
    map.addLayer({id:"farms-fill",type:"fill",source:"farms",paint:{"fill-color":["match",["get","status"],"Cần rà soát","#f1a54a","Chờ duyệt","#b58af0","#13bda5"],"fill-opacity":.54}});
    map.addLayer({id:"farms-border",type:"line",source:"farms",paint:{"line-color":"#046d64","line-width":1.8}});
+   map.addLayer({id:"farms-lines",type:"line",source:"farms",filter:["==",["geometry-type"],"LineString"],paint:{"line-color":"#e47750","line-width":3}});
+   map.addLayer({id:"farms-points",type:"circle",source:"farms",filter:["==",["geometry-type"],"Point"],paint:{"circle-radius":7,"circle-color":"#16a68a","circle-stroke-color":"#fff","circle-stroke-width":2.2}});
    map.addLayer({id:"farms-3d",type:"fill-extrusion",source:"farms",layout:{"visibility":"none"},paint:{"fill-extrusion-color":["match",["get","status"],"Cần rà soát","#f2ac51","Chờ duyệt","#a67ce1","#13ba99"],"fill-extrusion-height":65,"fill-extrusion-base":0,"fill-extrusion-opacity":.73}});
    map.addLayer({id:"import-polygons",type:"fill",source:"imported",filter:["==",["geometry-type"],"Polygon"],paint:{"fill-color":"#7d5af3","fill-opacity":.27}});
    map.addLayer({id:"import-lines",type:"line",source:"imported",filter:["any",["==",["geometry-type"],"LineString"],["==",["geometry-type"],"Polygon"]],paint:{"line-color":"#6a42da","line-width":2.3}});
@@ -122,7 +124,7 @@ function initMap(){
  });
  map.on("error",e=>{if(e&&e.error)console.warn("MapLibre:",e.error.message||e.error)});
 }
-function clickableLayers(){return["farms-fill","farms-3d","plans-fill","district-circle","import-polygons","import-lines","import-points"]}
+function clickableLayers(){return["farms-fill","farms-3d","farms-lines","farms-points","plans-fill","district-circle","import-polygons","import-lines","import-points"]}
 function refreshMap(){
  el("farmCount").textContent=String(allFarms().length+imported.filter(f=>f.properties.dataset==="farms").length);
  el("planCount").textContent=String(allDisplayPlans().length+imported.filter(f=>f.properties.dataset==="plans").length);
