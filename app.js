@@ -290,7 +290,8 @@ function parseCsv(data){
 }
 function normalizeImport(json){
  let fs=json.type==="FeatureCollection"?json.features:json.type==="Feature"?[json]:validGeometry(json)?[{type:"Feature",geometry:json,properties:{}}]:null;
- if(!Array.isArray(fs))throw Error("Cần GeoJSON FeatureCollection, Feature hoặc Geometry");\n fs=fs.map(f=>f&&f.type==="Feature"&&f.properties==null?{...f,properties:{}}:f);
+ if(!Array.isArray(fs))throw Error("Cần GeoJSON FeatureCollection, Feature hoặc Geometry");
+ fs=fs.map(f=>f&&f.type==="Feature"&&f.properties==null?{...f,properties:{}}:f);
  if(fs.length>3000)throw Error("Tối đa 3.000 đối tượng/lượt nhập để bảo vệ trình duyệt");
  if(fs.some(f=>!isValidFeature(f)))throw Error("Có tọa độ/hình học không hợp lệ. Yêu cầu CRS WGS84 kinh độ/vĩ độ");
  return fs.map((f,i)=>{const id="IMPORT-"+Date.now()+"-"+i;return {type:"Feature",id,geometry:f.geometry,properties:{...f.properties,id,name:String(f.properties.name||f.properties.ten||"Đối tượng nhập "+(i+1)).slice(0,140),dataset:"imported",provenance:"USER_IMPORT"}}});
