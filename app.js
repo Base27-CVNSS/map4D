@@ -124,15 +124,16 @@ function initMap(){
 }
 function clickableLayers(){return["farms-fill","farms-3d","plans-fill","district-circle","import-polygons","import-lines","import-points"]}
 function refreshMap(){
- el("farmCount").textContent=String(allFarms().length);
- el("planCount").textContent=String(allDisplayPlans().length);
+ el("farmCount").textContent=String(allFarms().length+imported.filter(f=>f.properties.dataset==="farms").length);
+ el("planCount").textContent=String(allDisplayPlans().length+imported.filter(f=>f.properties.dataset==="plans").length);
  el("dataCounter").textContent=String(allFarms().length+demoPlans.length+imported.length)+" đối tượng demo/nhập";
  if(mapReady){
    map.getSource("farms").setData(FC(allDisplayFarms()));
    map.getSource("plans").setData(FC(allDisplayPlans()));
    map.getSource("district").setData(FC(layerState.district?districtMarkers.filter(f=>filterDistrict==="all"||f.properties.district===filterDistrict):[]));
-   map.getSource("imported").setData(FC(imported));
+   map.getSource("imported").setData(FC(imported.filter(f=>layerState[f.properties.dataset]!==false&&(filterDistrict==="all"||!f.properties.district||f.properties.district===filterDistrict))));
  }
+ layerKeys.forEach(k=>{if(["farms","plans","district"].includes(k))return;const input=document.querySelector('[data-layer="'+k+'"]');const badge=input&&input.closest("label").querySelector("small");if(badge){const n=imported.filter(f=>f.properties.dataset===k).length;badge.textContent=n?String(n):"◇"}});
  renderRecords();
 }
 function onMapClick(e){
@@ -219,7 +220,7 @@ function setTab(name){
  Object.keys(tabs).forEach(k=>el(tabs[k]).classList.toggle("hidden",k!==name));
 }
 function renderRecords(){
- const target=el("recordList");const fs=allFarms().filter(f=>(filterDistrict==="all"||f.properties.district===filterDistrict)&&(filterStatus==="all"||f.properties.status===filterStatus));
+ const target=el("recordList");const fs=allFarms().concat(imported.filter(f=>f.properties.dataset==="farms")).filter(f=>(filterDistrict==="all"||f.properties.district===filterDistrict)&&(filterStatus==="all"||f.properties.status===filterStatus));
  target.innerHTML=fs.map(f=>'<button class="record-item" data-id="'+esc(f.properties.id)+'"><span><strong>'+esc(f.properties.id)+' · '+esc(f.properties.name)+'</strong><small>'+esc(f.properties.district)+' · '+esc(f.properties.status)+'</small></span><b>'+fnum(f.properties.areaHa||0,2)+' ha</b></button>').join("")||'<p class="muted">Không có bản ghi phù hợp.</p>';
  target.querySelectorAll("[data-id]").forEach(b=>b.addEventListener("click",()=>{inspect(b.dataset.id);if(selected)focusFeature(selected)}));
 }
@@ -284,7 +285,7 @@ function parseCsv(data){
  let errors=0;
  const features=rows.map((r,i)=>{const x=Number(r[xIndex]),y=Number(r[yIndex]);if(!String(r[xIndex]||"").trim()||!String(r[yIndex]||"").trim()||!validPosition([x,y])){errors++;return null}
  const props=Object.fromEntries(headers.map((h,j)=>[h,r[j]||""]));
- return {type:"Feature",id:"CSV-"+Date.now()+"-"+i,geometry:{type:"Point",coordinates:[x,y]},properties:{...props,id:"CSV-"+Date.now()+"-"+i,name:props.name||props.ten||"CSV "+(i+1),dataset:"imported",provenance:"USER_IMPORT",mock:false}}
+ return {type:"Feature",id:"CSV-"+Date.now()+"-"+i,geometry:{type:"Point",coordinates:[x,y]},properties:{...props,id:"CSV-"+Date.now()+"-"+i,name:props.name||props.ten||"CSV "+(i+1),dataset:el("importLayerTarget").value,provenance:"USER_IMPORT",mock:false}}
  }).filter(Boolean);
  return{features,errors}
 }
@@ -294,7 +295,7 @@ function normalizeImport(json){
  fs=fs.map(f=>f&&f.type==="Feature"&&f.properties==null?{...f,properties:{}}:f);
  if(fs.length>3000)throw Error("Tối đa 3.000 đối tượng/lượt nhập để bảo vệ trình duyệt");
  if(fs.some(f=>!isValidFeature(f)))throw Error("Có tọa độ/hình học không hợp lệ. Yêu cầu CRS WGS84 kinh độ/vĩ độ");
- return fs.map((f,i)=>{const id="IMPORT-"+Date.now()+"-"+i;return {type:"Feature",id,geometry:f.geometry,properties:{...f.properties,id,name:String(f.properties.name||f.properties.ten||"Đối tượng nhập "+(i+1)).slice(0,140),dataset:"imported",provenance:"USER_IMPORT"}}});
+ return fs.map((f,i)=>{const id="IMPORT-"+Date.now()+"-"+i;return {type:"Feature",id,geometry:f.geometry,properties:{...f.properties,id,name:String(f.properties.name||f.properties.ten||"Đối tượng nhập "+(i+1)).slice(0,140),dataset:el("importLayerTarget").value,provenance:"USER_IMPORT"}}});
 }
 function parseWKT(text){
  const t=text.trim();let match=t.match(/^(POINT|LINESTRING|POLYGON)\s*\(([\s\S]*)\)$/i);if(!match)throw Error("Bản demo hỗ trợ WKT POINT, LINESTRING hoặc POLYGON (không hỗ trợ SRID/MULTI*)");
@@ -310,6 +311,7 @@ async function importFile(file){
  if(!file)return;if(file.size>8*1024*1024){notify("Giới hạn tệp: 8 MB. Dùng pipeline PostGIS cho dữ liệu lớn.");return}
  try{const txt=await file.text();const csv=/\.csv$/i.test(file.name);let data=csv?parseCsv(txt):{features:normalizeImport(JSON.parse(txt)),errors:0};
  if(!data.features.length)throw Error("Không có đối tượng hợp lệ");
+ layerState[el("importLayerTarget").value]=true;document.querySelector('[data-layer="'+el("importLayerTarget").value+'"]').checked=true;
  imported=imported.concat(data.features);if(imported.length>6000)imported=imported.slice(-6000);
  refreshMap();focusFeature(data.features[0]);notify("Đã nhập "+data.features.length+" đối tượng WGS84"+(data.errors?" · bỏ "+data.errors+" dòng lỗi":"")+".");
  }catch(e){notify("Không thể nhập: "+(e.message||e))}
@@ -323,7 +325,7 @@ function setup(){
  loadLocal();
  document.querySelector(".inspector").id="inspectorPanel";
  const mobile=document.createElement("button");mobile.id="mobileInspector";mobile.className="mobile-inspector-toggle";mobile.textContent="☷ Phân tích / Hồ sơ";document.querySelector(".main-area").appendChild(mobile);mobile.addEventListener("click",toggleInspector);
- $all("[data-layer]").forEach(input=>input.addEventListener("change",()=>{layerState[input.dataset.layer]=input.checked;refreshMap();if(input.checked&&!["farms","plans","district"].includes(input.dataset.layer))notify("Lớp "+layerTitles[input.dataset.layer]+" đang chờ nhập dữ liệu thực địa GeoJSON WGS84.")}));
+ $all("[data-layer]").forEach(input=>input.addEventListener("change",()=>{layerState[input.dataset.layer]=input.checked;refreshMap();if(input.checked&&!["farms","plans","district"].includes(input.dataset.layer)&&!imported.some(f=>f.properties.dataset===input.dataset.layer))notify("Lớp "+layerTitles[input.dataset.layer]+" đang chờ nhập dữ liệu thực địa GeoJSON WGS84.")}));
  el("districtFilter").onchange=e=>{filterDistrict=e.target.value;refreshMap()};
  el("statusFilter").onchange=e=>{filterStatus=e.target.value;refreshMap()};
  el("resetFilters").onclick=()=>{filterDistrict="all";filterStatus="all";el("districtFilter").value="all";el("statusFilter").value="all";refreshMap()};
@@ -340,7 +342,7 @@ function setup(){
  el("playTime").onclick=()=>{if(playing){clearInterval(playing);playing=null;el("playTime").textContent="▶ Phát";return}year=year>=2025?2021:year;changeYear(year);el("playTime").textContent="❚❚ Dừng";playing=setInterval(()=>{if(year>=2025){clearInterval(playing);playing=null;el("playTime").textContent="▶ Phát"}else changeYear(year+1)},1100)};
  el("exportGeojson").onclick=exportGeoJSON;el("exportCsv").onclick=exportCSV;el("downloadResearchCsv").onclick=exportResearch;
  el("fileImport").onchange=e=>importFile(e.target.files[0]);
- el("pasteWkt").onclick=()=>{const w=prompt("Nhập WKT EPSG:4326 (POINT / LINESTRING / POLYGON). Ví dụ:\nPOINT (106.6 10.1)");if(!w)return;try{let fs=parseWKT(w);imported.push(...fs);refreshMap();focusFeature(fs[0]);notify("Đã thêm WKT vào lớp nhập ngoài.")}catch(e){notify(e.message)}};
+ el("pasteWkt").onclick=()=>{const w=prompt("Nhập WKT EPSG:4326 (POINT / LINESTRING / POLYGON). Ví dụ:\nPOINT (106.6 10.1)");if(!w)return;try{let fs=parseWKT(w);layerState[el("importLayerTarget").value]=true;document.querySelector('[data-layer="'+el("importLayerTarget").value+'"]').checked=true;imported.push(...fs);refreshMap();focusFeature(fs[0]);notify("Đã thêm WKT vào lớp chuyên đề đã chọn.")}catch(e){notify(e.message)}};
  el("createRecord").onclick=createRecord;
  el("openGuide").onclick=openInfo;el("sourceInfo").onclick=openInfo;
  el("closeDialog").onclick=()=>el("infoDialog").close();el("dialogOk").onclick=()=>el("infoDialog").close();
