@@ -1,0 +1,19 @@
+name: Verify Map4D Reproduction
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  syntax-and-research:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: node --check app.js
+      - name: Validate research data and document wiring
+        run: node --test tests/research.test.cjs
