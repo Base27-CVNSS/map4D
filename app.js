@@ -95,7 +95,7 @@ function initMap(){
  map=new maplibregl.Map({
    container:"map",center:[106.58,10.11],zoom:9.5,minZoom:5,maxZoom:20,pitch:0,
    attributionControl:true,
-   style:{version:8,sources:{base:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'}},layers:[{id:"base",type:"raster",source:"base",minzoom:0,maxzoom:22}]}
+   style:{version:8,glyphs:"https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",sources:{base:{type:"raster",tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],tileSize:256,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'}},layers:[{id:"base",type:"raster",source:"base",minzoom:0,maxzoom:22}]}
  });
  map.addControl(new maplibregl.NavigationControl({showCompass:false}),"bottom-right");
  map.on("load",()=>{
@@ -259,7 +259,7 @@ function exportGeoJSON(){
  const data=FC(allFarms().concat(demoPlans,districtMarkers,imported));
  download(JSON.stringify(data,null,2),filename("map4d-demo-geojson","geojson"),"application/geo+json;charset=utf-8");notify("Đã xuất GeoJSON. Các hình học demo có trường provenance.")
 }
-function csvCell(v){const t=String(v==null?"":v);return/[",;\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t}
+function csvCell(v){let t=String(v==null?"":v);if(/^[=+@]/.test(t))t="\u0027"+t;return/[",;\r\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t}
 function exportCSV(){
  const rows=[["id","name","district","status","dataset","provenance","geometry_type","area_ha","geometry_area_ha","geojson_geometry"]];
  allFarms().concat(demoPlans,districtMarkers,imported).forEach(f=>rows.push([f.properties.id,f.properties.name||"",f.properties.district||"",f.properties.status||"",f.properties.dataset||"",f.properties.provenance||"",f.geometry.type,f.properties.areaHa||"",geometryAreaHa(f.geometry)||"",JSON.stringify(f.geometry)]));
@@ -282,7 +282,7 @@ function parseCsv(data){
  const yIndex=headers.findIndex(s=>["lat","latitude","vi_do","vĩ độ","y"].includes(s));
  if(xIndex<0||yIndex<0)throw Error("CSV phải có cột lon và lat (hoặc longitude, latitude), tọa độ WGS84");
  let errors=0;
- const features=rows.map((r,i)=>{const x=Number(r[xIndex]),y=Number(r[yIndex]);if(!validPosition([x,y])){errors++;return null}
+ const features=rows.map((r,i)=>{const x=Number(r[xIndex]),y=Number(r[yIndex]);if(!String(r[xIndex]||"").trim()||!String(r[yIndex]||"").trim()||!validPosition([x,y])){errors++;return null}
  const props=Object.fromEntries(headers.map((h,j)=>[h,r[j]||""]));
  return {type:"Feature",id:"CSV-"+Date.now()+"-"+i,geometry:{type:"Point",coordinates:[x,y]},properties:{...props,id:"CSV-"+Date.now()+"-"+i,name:props.name||props.ten||"CSV "+(i+1),dataset:"imported",provenance:"USER_IMPORT",mock:false}}
  }).filter(Boolean);
@@ -290,7 +290,7 @@ function parseCsv(data){
 }
 function normalizeImport(json){
  let fs=json.type==="FeatureCollection"?json.features:json.type==="Feature"?[json]:validGeometry(json)?[{type:"Feature",geometry:json,properties:{}}]:null;
- if(!Array.isArray(fs))throw Error("Cần GeoJSON FeatureCollection, Feature hoặc Geometry");
+ if(!Array.isArray(fs))throw Error("Cần GeoJSON FeatureCollection, Feature hoặc Geometry");\n fs=fs.map(f=>f&&f.type==="Feature"&&f.properties==null?{...f,properties:{}}:f);
  if(fs.length>3000)throw Error("Tối đa 3.000 đối tượng/lượt nhập để bảo vệ trình duyệt");
  if(fs.some(f=>!isValidFeature(f)))throw Error("Có tọa độ/hình học không hợp lệ. Yêu cầu CRS WGS84 kinh độ/vĩ độ");
  return fs.map((f,i)=>{const id="IMPORT-"+Date.now()+"-"+i;return {type:"Feature",id,geometry:f.geometry,properties:{...f.properties,id,name:String(f.properties.name||f.properties.ten||"Đối tượng nhập "+(i+1)).slice(0,140),dataset:"imported",provenance:"USER_IMPORT"}}});
